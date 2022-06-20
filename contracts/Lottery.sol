@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.4 <0.9.0;
 
-import "hardhat/console.sol";
-// import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -13,102 +11,84 @@ contract Lottery is ERC721URIStorageUpgradeable, OwnableUpgradeable {
     Counters.Counter private ticketIds;
     
     uint private PRICE_PERCENTAGE;
-    uint256 private LOTTERY_ENTRANCE_ETHER;
-    uint private LOTTERY_OPEN_DURATION_IN_BLOCKS;
-
-    error LotteryOwnerCannotPlay();
-    error LotteryExactEntranceAmountRequired();
-    error LotteryNotOpen();
-    error LotteryEnded();
-    error LotteryStillOngoing();
-    error LotteryNotEnoughPlayers();
+    uint private TICKET_PRICE_ETHER;
+    uint private LOTTERY_OPEN_DURATION_BLOCKS;
 
     enum LotteryState {
         Open,
         PickingWinner
     }
 
-    event BuyTicket(address buyer, uint256 ticketId);
+    event BuyTicket(address buyer, uint ticketId);
     event PickWinner(address winner, uint priceAmount);
 
     LotteryState private lotteryState;
     uint private currentLotteryStartAt;
 
     address payable[] public players;
-
-    // constructor (string memory name, string memory symbol) ERC721(name, symbol) {
-    //     currentLotteryStartAt = block.number; // This can also be set to, for example, some hours/days from 'now'
-    // }
+    mapping (address => uint) playerToTicketId;
 
     function initialize(string memory name, string memory symbol) public initializer {
         __ERC721_init(name, symbol);
+        __Ownable_init();
         currentLotteryStartAt = block.number;
 
         PRICE_PERCENTAGE = 50;
-        LOTTERY_ENTRANCE_ETHER = 1 ether;
-        LOTTERY_OPEN_DURATION_IN_BLOCKS = 5;
+        TICKET_PRICE_ETHER = 1 ether;
+        LOTTERY_OPEN_DURATION_BLOCKS = 5;
         lotteryState = LotteryState.Open;
     }
     
     function buyTicket() external payable {
-        console.log("currentLotteryStartAt:", currentLotteryStartAt);
-        console.log("block.number:", block.number);
-        
-        if (msg.sender == owner()) revert LotteryOwnerCannotPlay(); // using revert instead of require -> gas optimization
-        if (msg.value != LOTTERY_ENTRANCE_ETHER) revert LotteryExactEntranceAmountRequired();
-        if (lotteryState != LotteryState.Open) revert LotteryNotOpen();
-        if (currentLotteryEnded()) revert LotteryEnded();
+        require(msg.sender != owner(), "Owner cannot play");
+        require(playerToTicketId[msg.sender] == 0, "Players cannot have more than one ticket");
+        require(msg.value == TICKET_PRICE_ETHER, "Exact ticket price required");
+        require(lotteryState == LotteryState.Open, "Lottery not open");
+        require(lotteryOngoing(), "Lottery ended");
 
-        uint256 newTicketId = ticketIds.current();
+        uint newTicketId = ticketIds.current();
         ticketIds.increment();
 
         _safeMint(payable(msg.sender), newTicketId);
-        _setTokenURI(newTicketId, ""); // TODO: implement tokenURI
+        _setTokenURI(newTicketId, "http://bafybeia5o3wdjpfovxjfgm3rqpkoku2atoobjbjkmdmcvvg7v5ads7wk6m.ipfs.localhost:8080/?filename=metadata.json");
         
         players.push(payable(msg.sender));
+        playerToTicketId[msg.sender] = newTicketId;
 
         emit BuyTicket(msg.sender, newTicketId);
     }
     
-    function getBalance() public view returns(uint) {
-        console.log("currentLotteryStartAt:", currentLotteryStartAt);
-        console.log("block.number:", block.number);
+    function getBalance() public view returns(uint) { // open to public for the sake of transparency to the players
         return address(this).balance;
     }
+
+    function getPlayerCount() public view returns(uint) {
+        return players.length;
+    }
     
-    function random() internal view returns(uint) { // TODO: random always returns second player, fix!
+    function random() internal view returns(uint) {
        return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, players.length)));
     }
 
-    function currentLotteryEnded() internal view returns (bool) {
-        return block.number > currentLotteryStartAt + LOTTERY_OPEN_DURATION_IN_BLOCKS;
+    function lotteryEnded() internal view returns (bool) {
+        return block.number > currentLotteryStartAt + LOTTERY_OPEN_DURATION_BLOCKS;
     }
 
-    function currentLotteryOngoing() internal view returns (bool) {
-        return block.number <= currentLotteryStartAt + LOTTERY_OPEN_DURATION_IN_BLOCKS;
+    function lotteryOngoing() internal view returns (bool) {
+        return block.number <= currentLotteryStartAt + LOTTERY_OPEN_DURATION_BLOCKS;
     }
     
     function pickWinner() external onlyOwner {
-        if (players.length < 2) revert LotteryNotEnoughPlayers();
-        if (currentLotteryOngoing()) revert LotteryStillOngoing();
+        require(players.length >= 3, "At least 3 players needed");
+        require(lotteryEnded(), "Lottery still ongoing");
         
         lotteryState = LotteryState.PickingWinner;
         address payable winner;
         winner = players[random() % players.length];
-        console.log("winner", winner);
 
         uint priceAmount = (getBalance() * PRICE_PERCENTAGE) / 100;
-        console.log("price amount", priceAmount);
         winner.transfer(priceAmount);
 
         emit PickWinner(winner, priceAmount);
-        
-        resetLottery();
-    }
-    
-    function resetLottery() internal {
-        players = new address payable[](0);
-        currentLotteryStartAt = block.number;
-        lotteryState = LotteryState.Open;
     }
 }
