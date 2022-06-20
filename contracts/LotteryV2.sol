@@ -2,12 +2,11 @@
 pragma solidity >=0.8.4 <0.9.0;
 
 import "hardhat/console.sol";
-// import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract Lottery is ERC721URIStorageUpgradeable, OwnableUpgradeable {
+contract LotteryV2 is ERC721URIStorageUpgradeable, OwnableUpgradeable {
 
     using Counters for Counters.Counter;
     Counters.Counter private ticketIds;
@@ -73,7 +72,7 @@ contract Lottery is ERC721URIStorageUpgradeable, OwnableUpgradeable {
     function getBalance() public view returns(uint) {
         console.log("currentLotteryStartAt:", currentLotteryStartAt);
         console.log("block.number:", block.number);
-        return address(this).balance;
+        return 10;
     }
     
     function random() internal view returns(uint) { // TODO: random always returns second player, fix!
