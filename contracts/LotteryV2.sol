@@ -46,11 +46,11 @@ contract LotteryV2 is ERC721URIStorageUpgradeable, OwnableUpgradeable {
         require(lotteryState == LotteryState.Open, "Lottery not open");
         require(lotteryOngoing(), "Lottery ended");
 
-        uint newTicketId = ticketIds.current();
         ticketIds.increment();
+        uint newTicketId = ticketIds.current();
 
         _safeMint(payable(msg.sender), newTicketId);
-        _setTokenURI(newTicketId, "http://bafybeia5o3wdjpfovxjfgm3rqpkoku2atoobjbjkmdmcvvg7v5ads7wk6m.ipfs.localhost:8080/?filename=metadata.json");
+        _setTokenURI(newTicketId, "https://ipfs.io/ipfs/QmQKfi3xnGjDkFvYR9EQDP67BGWJvqqFNUPfvQxTdqXPWS?filename=metadata.json");
         
         players.push(payable(msg.sender));
         playerToTicketId[msg.sender] = newTicketId;
@@ -59,7 +59,7 @@ contract LotteryV2 is ERC721URIStorageUpgradeable, OwnableUpgradeable {
     }
     
     function getBalance() public view returns(uint) { // open to public for the sake of transparency to the players
-        return 5;
+        return address(this).balance + 5;
     }
 
     function getPlayerCount() public view returns(uint) {
@@ -87,7 +87,8 @@ contract LotteryV2 is ERC721URIStorageUpgradeable, OwnableUpgradeable {
         winner = players[random() % players.length];
 
         uint priceAmount = (getBalance() * PRICE_PERCENTAGE) / 100;
-        winner.transfer(priceAmount);
+        (bool sendSuccess, ) = winner.call{value: priceAmount}("");
+        require(sendSuccess, "Failed to send award");
 
         emit PickWinner(winner, priceAmount);
     }

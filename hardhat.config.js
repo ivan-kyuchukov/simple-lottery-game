@@ -14,5 +14,5 @@ task("accounts", "Prints the list of accounts", async (_, { ethers }) => {
 });
 
 module.exports = {
-  solidity: "0.8.4",
+  solidity: "0.8.4"
 };
