@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URISto
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract Lottery is ERC721URIStorageUpgradeable, OwnableUpgradeable {
+contract LotteryV2 is ERC721URIStorageUpgradeable, OwnableUpgradeable {
 
     using Counters for Counters.Counter;
     Counters.Counter private ticketIds;
@@ -59,7 +59,7 @@ contract Lottery is ERC721URIStorageUpgradeable, OwnableUpgradeable {
     }
     
     function getBalance() public view returns(uint) { // open to public for the sake of transparency to the players
-        return address(this).balance;
+        return address(this).balance + 5;
     }
 
     function getPlayerCount() public view returns(uint) {
