@@ -1,15 +1,30 @@
-# Basic Sample Hardhat Project
+# NFT Lottery Game
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+NFT Lottery on a Hardhat environment https://hardhat.org.
+Users are able to buy a ticket which is an actual NFT. The funds from each ticket purchase are gathered in a prize pool. After a certain period of time a random winner is chosen.
 
-Try running some of the following tasks:
+
+Running the following in one terminal:
 
 ```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
 npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
+```
+
+And the following in a second terminal:
+
+```shell
+npx hardhat run scripts/lottery.js --network localhost
+```
+
+If you'd like to test the upgradeable proxy contract run:
+(*the address of the already deployed proxy should be pasted in the scripts/lottery_v2.js file)
+
+```shell
+npx hardhat run scripts/lottery_v2.js --network localhost
+```
+
+Execute tests using:
+
+```shell
+npx hardhat test
 ```
